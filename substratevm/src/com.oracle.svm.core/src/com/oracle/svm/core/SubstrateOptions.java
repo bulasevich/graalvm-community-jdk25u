@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, 2026, IBM Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -910,7 +911,11 @@ public class SubstrateOptions {
     @Option(help = "Perform trivial method inlining in the AOT compiled native image")//
     public static final HostedOptionKey<Boolean> AOTTrivialInline = new HostedOptionKey<>(true);
 
-    @LayerVerifiedOption(kind = Kind.Removed, severity = Severity.Error, positional = false)//
+    @LayerVerifiedOption(kind = Kind.Changed, severity = Severity.Error)//
+    @Option(help = "Perform single callsite method inlining in the AOT compiled native image")//
+    public static final HostedOptionKey<Boolean> AOTSingleCallsiteInline = new HostedOptionKey<>(true);
+
+    @LayerVerifiedOption(kind = Kind.Removed, severity = Severity.Error, positional = false)
     @Option(help = "file:doc-files/NeverInlineHelp.txt", type = OptionType.Debug)//
     public static final HostedOptionKey<AccumulatingLocatableMultiOptionValue.Strings> NeverInline = new HostedOptionKey<>(AccumulatingLocatableMultiOptionValue.Strings.build());
 

@@ -788,7 +788,7 @@ public class CompileQueue {
     protected void inlineSingleCallsiteMethods(DebugContext debug) throws InterruptedException {
         inliningRound = 0;
         // First count callsites
-        try (Indent _ = debug.logAndIndent("==== Single Callsite Inlining: counting callsites")) {
+        try (Indent ignored = debug.logAndIndent("==== Single Callsite Inlining: counting callsites")) {
             runOnExecutor(() -> {
                 universe.getMethods().forEach(method -> {
                     assert method.isOriginalMethod();
@@ -805,7 +805,7 @@ public class CompileQueue {
         // Inline single callsite methods
         do {
             beginRound();
-            try (Indent _ = debug.logAndIndent("==== Single Callsite Inlining  round %n")) {
+            try (Indent ignored = debug.logAndIndent("==== Single Callsite Inlining  round %n")) {
                 runOnExecutor(() -> {
                     universe.getMethods().forEach(method -> {
                         assert method.isOriginalMethod();
@@ -979,10 +979,11 @@ public class CompileQueue {
         }
     }
 
+    @SuppressWarnings("try")
     private void doInlineSingleCallsite(DebugContext debug, HostedMethod method) {
         var providers = runtimeConfig.lookupBackend(method).getProviders();
         var graph = method.compilationInfo.createGraph(debug, getCustomizedOptions(method, debug), CompilationIdentifier.INVALID_COMPILATION_ID, false);
-        try (var _ = debug.scope("InlineSingleCallsites", graph, method, this)) {
+        try (var ignored = debug.scope("InlineSingleCallsites", graph, method, this)) {
             var inliningPlugin = new SingleCallsiteInliningPlugin();
             var decoder = new InliningGraphDecoder(graph, providers, inliningPlugin);
             new InlinePhase(decoder, method, "SingleCallsiteInline").apply(graph);
@@ -1016,7 +1017,7 @@ public class CompileQueue {
     }
 
     private boolean makeSingleCallsiteInlineDecision(HostedMethod caller, HostedMethod callee) {
-        if (!isCalleeGraphAvailable(caller, callee)) {
+        if (!isCalleeGraphAvailable(caller, callee) || !callee.getWrapped().canBeInlined()) {
             return false;
         }
 

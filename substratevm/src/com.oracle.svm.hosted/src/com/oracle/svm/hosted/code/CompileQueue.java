@@ -187,10 +187,10 @@ public class CompileQueue {
     private final boolean printMethodHistogram = NativeImageOptions.PrintMethodHistogram.getValue();
     private final boolean optionAOTTrivialInline = SubstrateOptions.AOTTrivialInline.getValue();
 
-    public record UnpublishedMethodInfo(CompilationGraph unpublishedGraph, boolean newlyTrivial) {
+    public record UnpublishedTrivialMethods(CompilationGraph unpublishedGraph, boolean newlyTrivial) {
     }
 
-    private final ConcurrentMap<HostedMethod, UnpublishedMethodInfo> unpublishedMethods = new ConcurrentHashMap<>();
+    private final ConcurrentMap<HostedMethod, UnpublishedTrivialMethods> unpublishedTrivialMethods = new ConcurrentHashMap<>();
 
     /*
      * Edge case handling: For each method, track that last round that Single Callsite Inlining was
@@ -763,14 +763,14 @@ public class CompileQueue {
                     });
                 });
             }
-            for (Map.Entry<HostedMethod, UnpublishedMethodInfo> entry : unpublishedMethods.entrySet()) {
+            for (Map.Entry<HostedMethod, UnpublishedTrivialMethods> entry : unpublishedTrivialMethods.entrySet()) {
                 entry.getKey().compilationInfo.setCompilationGraph(entry.getValue().unpublishedGraph);
                 if (entry.getValue().newlyTrivial) {
                     inliningProgress = true;
                     entry.getKey().compilationInfo.setTrivialMethod();
                 }
             }
-            unpublishedMethods.clear();
+            unpublishedTrivialMethods.clear();
         } while (inliningProgress);
     }
 
@@ -819,11 +819,11 @@ public class CompileQueue {
                 });
             }
             // Publish modified graphs
-            for (Map.Entry<HostedMethod, UnpublishedMethodInfo> entry : unpublishedMethods.entrySet()) {
+            for (Map.Entry<HostedMethod, UnpublishedTrivialMethods> entry : unpublishedTrivialMethods.entrySet()) {
                 entry.getKey().compilationInfo.setCompilationGraph(entry.getValue().unpublishedGraph);
                 inliningProgress = true;
             }
-            unpublishedMethods.clear();
+            unpublishedTrivialMethods.clear();
         } while (inliningProgress);
     }
 
@@ -971,7 +971,7 @@ public class CompileQueue {
                      * non-deterministic. This is why we are saving graphs to be published at the
                      * end of each round.
                      */
-                    unpublishedMethods.put(method, new UnpublishedMethodInfo(CompilationGraph.encode(graph), checkNewlyTrivial(method, graph)));
+                    unpublishedTrivialMethods.put(method, new UnpublishedTrivialMethods(CompilationGraph.encode(graph), checkNewlyTrivial(method, graph)));
                 }
             }
         } catch (Throwable ex) {
@@ -990,7 +990,7 @@ public class CompileQueue {
 
             if (inliningPlugin.inlinedDuringDecoding) {
                 CanonicalizerPhase.create().apply(graph, providers);
-                unpublishedMethods.put(method, new UnpublishedMethodInfo(CompilationGraph.encode(graph), true));
+                unpublishedTrivialMethods.put(method, new UnpublishedTrivialMethods(CompilationGraph.encode(graph), true));
             }
             if (inliningPlugin.inlinedDuringDecoding || inliningRound == 0) {
                 method.compilationInfo.sizeLastRound = NodeCostUtil.computeGraphSize(graph);

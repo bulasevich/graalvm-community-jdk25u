@@ -74,6 +74,11 @@ jobs:
     - name: Build GraalVM JDK
       uses: ./.github/actions/build-graalvm
       with:
+        jdk-version: '25'
+    - name: Set up JAVA_HOME
+      uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      with:
+        distribution: 'temurin'
         java-version: ${{ env.QUARKUS_JAVA_VERSION }}
     - name: Get latest Quarkus release
       run: |
@@ -120,8 +125,7 @@ jobs:
     needs: build-quarkus-and-graalvm
     runs-on: ubuntu-latest
     env:
-      GRAALVM_HOME: ${{ github.workspace }}/graalvm # identical to the one in ./.github/actions/build-graalvm
-    # Ignore the following YAML Schema error
+      GRAALVM_HOME: ${{ github.workspace }}/graalvm
     timeout-minutes: ${{matrix.timeout}}
     strategy:
       max-parallel: 8

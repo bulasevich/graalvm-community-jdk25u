@@ -25,6 +25,7 @@
 package com.oracle.svm.test.lambda;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,8 +39,9 @@ import java.util.function.Function;
 import org.junit.Test;
 
 /**
- * The tests in this class need reachability metadata that must not apply to the rest of the
- * {@code com.oracle.svm.test} image, so they are built into a dedicated native image by
+ * The tests in this class need reachability metadata and
+ * {@code --exact-reachability-metadata=com.oracle.svm.test.lambda}, which must not apply to the
+ * rest of the {@code com.oracle.svm.test} image, so they are built into a dedicated native image by
  * {@code mx_substratevm.py}. See {@code serializablemetadata/reachability-metadata.json} for the
  * metadata itself.
  */
@@ -70,6 +72,10 @@ public class SerializableLambdaReachabilityMetadataTest {
         static Function<Integer, String> createCapturedLambda(int offset, CapturedValue capturedValue) {
             return (SerializableFunction) value -> capturedValue.text() + ":" + (value + offset);
         }
+
+        static Function<Integer, String> createUnregisteredLambda() {
+            return (SerializableFunction) value -> "unregistered:" + value;
+        }
     }
 
     @Test
@@ -95,6 +101,14 @@ public class SerializableLambdaReachabilityMetadataTest {
 
         assertEquals("captured:49", expected);
         assertEquals(expected, deserialized.apply(value));
+    }
+
+    @Test
+    public void testMethodScopedMetadataDoesNotRegisterOtherSerializableLambdas() {
+        Function<Integer, String> lambda = LambdaFactory.createUnregisteredLambda();
+
+        assertEquals("unregistered:42", lambda.apply(42));
+        assertThrows(LinkageError.class, () -> deserialize(serialize((Serializable) lambda)));
     }
 
     private static byte[] serialize(Serializable object) throws IOException {

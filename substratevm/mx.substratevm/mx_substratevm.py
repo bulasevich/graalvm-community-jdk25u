@@ -561,6 +561,17 @@ def native_unittests_task(extra_build_args=None):
         if mx.is_windows():
             mx_unittest.add_global_ignore_glob('com.oracle.svm.test.SecurityServiceTest')
 
+    # com.oracle.svm.test.lambda needs image-wide build args that must not affect the other tests:
+    # exact reachability metadata makes any missing registration a hard error, and the tests assert
+    # that behaviour. Upstream scopes these per test class with @NativeImageBuildArgs, added in
+    # b18968bfef3, which this release does not have, so build a dedicated image instead. Drop this
+    # in favour of the annotation if that infrastructure is ever backported.
+    native_unittest(['com.oracle.svm.test.lambda', '--build-args', _native_unittest_features] +
+                    additional_build_args +
+                    ['--exact-reachability-metadata=com.oracle.svm.test.lambda'] +
+                    svm_experimental_options(['-H:ConfigurationResourceRoots=com/oracle/svm/test/lambda/serializablemetadata']))
+    mx_unittest.add_global_ignore_glob('com.oracle.svm.test.lambda.*')
+
     native_unittest(['--build-args', _native_unittest_features] + additional_build_args)
 
 
